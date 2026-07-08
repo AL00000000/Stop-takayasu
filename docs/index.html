@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>本日のストップ高・ストップ安銘柄</title>
+<style>
+:root{--bg:#0b1117;--panel:#111a24;--panel2:#0f1720;--line:#253242;--text:#e8eef5;--muted:#91a0b2;--accent:#2fb8c6;--up:#ff6673;--down:#63a8ff;--new:#ffd166}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI","Yu Gothic UI","Meiryo",sans-serif}.wrap{max-width:1180px;margin:0 auto;padding:22px 14px 56px}
+header{display:flex;align-items:baseline;gap:12px 18px;flex-wrap:wrap;margin-bottom:14px}h1{font-size:1.42rem;margin:0}.sub{color:var(--muted);font-size:.86rem}.src{margin-left:auto;color:var(--accent);border:1px solid var(--line);background:var(--panel2);text-decoration:none;border-radius:8px;padding:8px 12px;font-size:.84rem}
+.toolbar,.banner{background:var(--panel);border:1px solid var(--line);border-radius:10px}.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:13px;margin-bottom:10px}.toolbar label{color:var(--muted);font-size:.82rem;margin-right:5px}select,input,button{font:inherit}select,input{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px 10px}input{width:230px}.live{background:var(--accent);border:0;border-radius:8px;color:#031014;font-weight:700;padding:9px 14px;cursor:pointer}.live:disabled{opacity:.55;cursor:wait}.stat{color:var(--muted);font-size:.84rem}.stat b{color:var(--text)}
+.banner{padding:10px 13px;color:var(--muted);font-size:.85rem;margin-bottom:10px}.banner b{color:var(--text)}.banner.liveon{border-color:var(--accent)}.err{color:var(--up)}.note{color:var(--new);font-weight:700}
+.tablebox{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:auto;max-height:76vh}table{width:100%;border-collapse:collapse;white-space:nowrap;font-size:.86rem}th{position:sticky;top:0;background:#172332;color:var(--muted);text-align:right;padding:9px;border-bottom:1px solid var(--line);cursor:pointer}th.tl{text-align:left}td{padding:8px 9px;border-bottom:1px solid #182332;text-align:right;font-variant-numeric:tabular-nums}td.tl{text-align:left}tbody tr:hover{background:#17233288}.up{color:var(--up)}.down{color:var(--down)}.flat{color:var(--muted)}.new{color:var(--new);font-weight:700}.code a{color:var(--accent);text-decoration:none}.name{max-width:190px;overflow:hidden;text-overflow:ellipsis}.loading{text-align:center;color:var(--muted);padding:42px}
+footer{color:var(--muted);font-size:.76rem;line-height:1.7;margin-top:14px}footer a{color:var(--accent)}@media(max-width:720px){input{width:100%}.src{margin-left:0}table{font-size:.7rem}th,td{padding:6px 4px}.name{max-width:88px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>本日のストップ高・ストップ安銘柄</h1>
+    <span class="sub">Kabutan 株価注意報 / 平日15:50更新 / 前回保存日比の順位変動付き</span>
+    <a class="src" href="https://github.com/AL00000000/Stop-takayasu/archive/refs/heads/main.zip">ソースコードDL</a>
+  </header>
+  <div class="toolbar">
+    <button class="live" id="liveBtn">ライブ更新</button>
+    <span><label>データ群</label><select id="preset"><option value="all">全件</option><option value="high">ストップ高</option><option value="low">ストップ安</option><option value="new">NEWのみ</option></select></span>
+    <span><label>日付</label><select id="dateSel"></select></span>
+    <input id="q" type="search" placeholder="銘柄名・コードで検索">
+    <span class="stat" id="stat"></span>
+  </div>
+  <div class="banner" id="banner">読み込み中...</div>
+  <div class="tablebox">
+    <table>
+      <thead><tr id="head"></tr></thead>
+      <tbody id="body"><tr><td class="loading" colspan="13">読み込み中...</td></tr></tbody>
+    </table>
+  </div>
+  <footer>
+    データ取得元: <a href="https://kabutan.jp/warning/?mode=3_1" target="_blank" rel="noopener">株探 ストップ高</a> / <a href="https://kabutan.jp/warning/?mode=3_2" target="_blank" rel="noopener">株探 ストップ安</a>。ライブ更新はCORSプロキシ経由で表示のみ行い、保存しません。
+  </footer>
+</div>
+<script>
+"use strict";
+const DATA_NOTES = {};
+const COLS=[
+ {k:"group_label",l:"種別",left:true},
+ {k:"rank",l:"順位",num:s=>s.rank},
+ {k:"move",l:"変動",num:s=>s.is_new?Infinity:(s.move_num??0),color:true},
+ {k:"prev_rank",l:"前回",num:s=>s.prev_rank===""?Infinity:+s.prev_rank},
+ {k:"code",l:"コード",left:true,code:true},
+ {k:"name",l:"銘柄名",left:true,cls:"name tl"},
+ {k:"market",l:"市場",left:true},
+ {k:"price",l:"株価",num:s=>num(s.price)},
+ {k:"status",l:"状態"},
+ {k:"change",l:"前日比",num:s=>num(s.change),color:true},
+ {k:"change_pct",l:"前日比率",num:s=>num(s.change_pct),color:true},
+ {k:"per",l:"PER",num:s=>num2(s.per)},
+ {k:"pbr",l:"PBR",num:s=>num2(s.pbr)},
+ {k:"yld",l:"利回り",num:s=>num2(s.yld)}
+];
+let rows=[],dates=[],sortKey="group_label",sortAsc=true,currentDate=null;
+function num(v){const n=parseFloat(String(v??"").replace(/,/g,"").replace("+","").replace("%",""));return isNaN(n)?-Infinity:n}
+function num2(v){const n=parseFloat(String(v??"").replace(/,/g,""));return isNaN(n)?Infinity:n}
+function cls(v){v=String(v??"");if(v==="NEW")return"new";if(v.startsWith("+")||v.startsWith("↑"))return"up";if(v.startsWith("-")||v.startsWith("↓"))return"down";if(v==="→")return"flat";return""}
+function noteHtml(d){return DATA_NOTES[d]?` <span class="note">DATA_NOTES: ${DATA_NOTES[d].join(" / ")}</span>`:""}
+function banner(html,live=false){const b=document.getElementById("banner");b.innerHTML=html;b.classList.toggle("liveon",live)}
+function buildHead(){const h=document.getElementById("head");h.innerHTML="";for(const c of COLS){const th=document.createElement("th");th.textContent=c.l+(sortKey===c.k?(sortAsc?" ▲":" ▼"):"");if(c.left)th.className="tl";th.onclick=()=>{if(sortKey===c.k)sortAsc=!sortAsc;else{sortKey=c.k;sortAsc=!!c.num}render()};h.appendChild(th)}}
+function filtered(){const q=document.getElementById("q").value.trim().toLowerCase();const p=document.getElementById("preset").value;return rows.filter(s=>(!q||s.name.toLowerCase().includes(q)||s.code.toLowerCase().includes(q))&&(p==="all"||(p==="high"&&s.group==="stop_high")||(p==="low"&&s.group==="stop_low")||(p==="new"&&s.is_new)))}
+function render(){buildHead();const col=COLS.find(c=>c.k===sortKey);const data=filtered().sort((a,b)=>{let r=col.num?col.num(a)-col.num(b):String(a[col.k]??"").localeCompare(String(b[col.k]??""),"ja");if(r===0)r=(a.group+a.rank).localeCompare(b.group+b.rank);return sortAsc?r:-r});const tb=document.getElementById("body");tb.innerHTML="";for(const s of data){const tr=document.createElement("tr");for(const c of COLS){const td=document.createElement("td");if(c.left)td.classList.add("tl");if(c.cls)td.className=c.cls;if(c.color){const cn=cls(s[c.k]);if(cn)td.classList.add(cn)}if(c.code){td.className="code tl";const a=document.createElement("a");a.href="https://kabutan.jp/stock/?code="+encodeURIComponent(s.code);a.target="_blank";a.rel="noopener";a.textContent=s.code;td.appendChild(a)}else td.textContent=s[c.k]??"";tr.appendChild(td)}tb.appendChild(tr)}document.getElementById("stat").innerHTML=`表示 <b>${data.length}</b> / ${rows.length} 件`}
+async function loadDate(d){currentDate=d;const res=await fetch(`data/${d}.json`,{cache:"no-cache"});const p=await res.json();rows=p.stocks;banner(`保存データ: <b>${p.as_of||p.date}</b> / 件数: <b>${p.count}</b> (高 ${p.source_counts.stop_high||0} / 安 ${p.source_counts.stop_low||0}) / 比較対象: <b>${p.prev_date||"なし"}</b>${noteHtml(d)}${noteHtml(p.prev_date)}`);render()}
+const PROXY=u=>"https://corsproxy.io/?url="+encodeURIComponent(u);
+const URLS={stop_high:"https://kabutan.jp/warning/?mode=3_1&market=0&capitalization=-1&dispmode=normal",stop_low:"https://kabutan.jp/warning/?mode=3_2&market=0&capitalization=-1&dispmode=normal"};
+const cell=n=>`<td[^>]*>(?<${n}>(?:(?!<\\/td>)[\\s\\S])*)<\\/td>`;
+const icon=`<td[^>]*>(?:(?!<\\/td>)[\\s\\S])*<\\/td>`;
+const rowRe=new RegExp(`<tr>\\s*<td class="tac"><a href="\\/stock\\/\\?code=(?<code>[0-9A-Z]+)">[0-9A-Z]+<\\/a><\\/td>\\s*<th scope="row" class="tal">(?<name>(?:(?!<\\/th>)[\\s\\S])*)<\\/th>\\s*<td class="tac">(?<market>(?:(?!<\\/td>)[\\s\\S])*)<\\/td>\\s*<td class="gaiyou_icon">(?:(?!<\\/td>)[\\s\\S])*<\\/td>\\s*<td class="chart_icon">(?:(?!<\\/td>)[\\s\\S])*<\\/td>\\s*${cell("price")}\\s*${cell("status")}\\s*${cell("change")}\\s*${cell("change_pct")}\\s*${icon}\\s*${cell("per")}\\s*${cell("pbr")}\\s*${cell("yld")}`,"g");
+const asofRe=/<li>([0-9]{4}年[0-9]{2}月[0-9]{2}日)<\/li>\s*<li>([0-9]{1,2}:[0-9]{2})現在<\/li>/;
+function clean(v){const d=document.createElement("div");d.innerHTML=v;return d.textContent.replace(/\s+/g," ").trim()}
+function parseLive(html,g,label){const tm=html.match(/<table class="stock_table st_market">([\s\S]*?)<\/table>/);const out=[];if(!tm)return out;rowRe.lastIndex=0;let m;while((m=rowRe.exec(tm[1]))){const s={group:g,group_label:label,key:g+":"+m.groups.code};for(const[k,v]of Object.entries(m.groups))s[k]=clean(v||"");s.change_pct_num=num(s.change_pct);out.push(s)}return out}
+async function live(){const btn=document.getElementById("liveBtn");btn.disabled=true;try{const cb=Date.now();const hs=await Promise.all(Object.entries(URLS).map(async([g,u])=>[g,await (await fetch(PROXY(u+"&_cb="+cb),{cache:"no-store"})).text()]));let liveRows=[];let asof="";for(const[g,h]of hs){const label=g==="stop_high"?"本日のストップ高銘柄":"本日のストップ安銘柄";liveRows=liveRows.concat(parseLive(h,g,label));const am=h.match(asofRe);if(am)asof=am[1].replace("年","-").replace("月","-").replace("日","")+" "+am[2]}const baseDate=dates.find(d=>!asof||d<asof.slice(0,10));let base={};if(baseDate){const p=await (await fetch(`data/${baseDate}.json`,{cache:"no-cache"})).json();base=Object.fromEntries(p.stocks.map(s=>[s.key,s]))}for(const g of ["stop_high","stop_low"]){const rs=liveRows.filter(s=>s.group===g).sort((a,b)=>g==="stop_high"?num(b.change_pct)-num(a.change_pct):num(a.change_pct)-num(b.change_pct));rs.forEach((s,i)=>{s.rank=i+1;const p=base[s.key];if(p){const diff=p.rank-s.rank;s.prev_rank=p.rank;s.move_num=diff;s.move=diff>0?"↑"+diff:diff<0?"↓"+(-diff):"→";s.is_new=false}else{s.prev_rank="";s.move_num=null;s.move=baseDate?"NEW":"";s.is_new=!!baseDate}})}rows=liveRows.sort((a,b)=>(a.group+a.rank).localeCompare(b.group+b.rank));banner(`ライブデータ: <b>${asof||"時刻不明"}</b> / 件数: <b>${rows.length}</b> / 比較対象: <b>${baseDate||"なし"}</b>`,true);render()}catch(e){banner(`<span class="err">ライブ更新に失敗しました: ${e}</span>`)}finally{btn.disabled=false}}
+async function init(){const idx=await (await fetch("data/index.json",{cache:"no-cache"})).json();dates=idx.dates||[];document.getElementById("dateSel").innerHTML=dates.map(d=>`<option value="${d}">${d}</option>`).join("");document.getElementById("dateSel").onchange=e=>loadDate(e.target.value);document.getElementById("q").oninput=render;document.getElementById("preset").onchange=render;document.getElementById("liveBtn").onclick=live;if(dates.length)await loadDate(dates[0]);else banner("保存データがありません")}
+init().catch(e=>banner(`<span class="err">読み込みに失敗しました: ${e}</span>`));
+</script>
+</body>
+</html>
