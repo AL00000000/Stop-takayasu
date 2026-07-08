@@ -41,6 +41,7 @@ SOURCES = [
         "sign": -1,
     },
 ]
+REQUEST_SLEEP = 1.5
 
 TABLE_RE = re.compile(r'<table class="stock_table st_market">(?P<table>[\s\S]*?)</table>')
 AS_OF_RE = re.compile(
@@ -97,6 +98,11 @@ def fetch(url: str) -> str:
         return res.read().decode("utf-8", errors="replace")
 
 
+def paged_url(url: str, page: int) -> str:
+    sep = "&" if "?" in url else "?"
+    return f"{url}{sep}page={page}"
+
+
 def parse_page(html_text: str, source: dict) -> tuple[list[dict], str | None, int | None]:
     as_of = None
     m = AS_OF_RE.search(html_text)
@@ -126,6 +132,37 @@ def parse_page(html_text: str, source: dict) -> tuple[list[dict], str | None, in
         d["key"] = f"{source['group']}:{d['code']}"
         d["change_pct_num"] = parse_number(d["change_pct"])
         rows.append(d)
+    return rows, as_of, expected_count
+
+
+def fetch_source(source: dict) -> tuple[list[dict], str | None, int | None]:
+    rows = []
+    as_of = None
+    expected_count = None
+    seen_codes = set()
+    page = 1
+
+    while True:
+        html_text = fetch(source["url"] if page == 1 else paged_url(source["url"], page))
+        page_rows, page_as_of, page_expected = parse_page(html_text, source)
+        if page_as_of:
+            as_of = page_as_of
+        if page_expected is not None:
+            expected_count = page_expected
+
+        before = len(rows)
+        for row in page_rows:
+            if row["code"] not in seen_codes:
+                seen_codes.add(row["code"])
+                rows.append(row)
+
+        if expected_count is None or len(rows) >= expected_count:
+            break
+        if len(rows) == before or not page_rows:
+            break
+        page += 1
+        time.sleep(REQUEST_SLEEP)
+
     return rows, as_of, expected_count
 
 
@@ -183,9 +220,8 @@ def main() -> int:
     expected_counts = {}
     for idx, source in enumerate(SOURCES):
         if idx:
-            time.sleep(1.5)
-        html_text = fetch(source["url"])
-        rows, as_of, expected_count = parse_page(html_text, source)
+            time.sleep(REQUEST_SLEEP)
+        rows, as_of, expected_count = fetch_source(source)
         if as_of:
             as_of_values.append(as_of)
         source_counts[source["group"]] = len(rows)
