@@ -24,8 +24,7 @@ footer{color:var(--muted);font-size:.76rem;line-height:1.7;margin-top:14px}foote
   </header>
 
   <div class="tabs" role="tablist" aria-label="表示するデータ">
-    <button class="tab" data-view="all" aria-selected="true">すべて<span class="count" id="count-all"></span></button>
-    <button class="tab" data-view="high" aria-selected="false">ストップ高<span class="count" id="count-high"></span></button>
+    <button class="tab" data-view="high" aria-selected="true">ストップ高<span class="count" id="count-high"></span></button>
     <button class="tab" data-view="low" aria-selected="false">ストップ安<span class="count" id="count-low"></span></button>
     <button class="tab" data-view="new" aria-selected="false">NEW<span class="count" id="count-new"></span></button>
   </div>
@@ -66,18 +65,17 @@ const COLS=[
  {k:"pbr",l:"PBR",num:s=>num2(s.pbr)},
  {k:"yld",l:"利回り",num:s=>num2(s.yld)}
 ];
-let rows=[],dates=[],sortKey="rank",sortAsc=true,currentDate=null,currentView="all";
+let rows=[],dates=[],sortKey="rank",sortAsc=true,currentDate=null,currentView="high";
 function num(v){const n=parseFloat(String(v??"").replace(/,/g,"").replace("+","").replace("%",""));return isNaN(n)?-Infinity:n}
 function num2(v){const n=parseFloat(String(v??"").replace(/,/g,""));return isNaN(n)?Infinity:n}
 function cls(v){v=String(v??"");if(v==="NEW")return"new";if(v.startsWith("+")||v.startsWith("↑"))return"up";if(v.startsWith("-")||v.startsWith("↓"))return"down";if(v==="→")return"flat";return""}
 function noteHtml(d){return DATA_NOTES[d]?` <span class="note">DATA_NOTES: ${DATA_NOTES[d].join(" / ")}</span>`:""}
 function banner(html,live=false){const b=document.getElementById("banner");b.innerHTML=html;b.classList.toggle("liveon",live)}
-function viewName(){return currentView==="high"?"ストップ高":currentView==="low"?"ストップ安":currentView==="new"?"NEW":"すべて"}
+function viewName(){return currentView==="high"?"ストップ高":currentView==="low"?"ストップ安":"NEW"}
 function updateCounts(){
   const high=rows.filter(s=>s.group==="stop_high").length;
   const low=rows.filter(s=>s.group==="stop_low").length;
   const fresh=rows.filter(s=>s.is_new).length;
-  document.getElementById("count-all").textContent=`(${rows.length})`;
   document.getElementById("count-high").textContent=`(${high})`;
   document.getElementById("count-low").textContent=`(${low})`;
   document.getElementById("count-new").textContent=`(${fresh})`;
@@ -96,7 +94,7 @@ function filtered(){
   const q=document.getElementById("q").value.trim().toLowerCase();
   return rows.filter(s=>
     (!q||s.name.toLowerCase().includes(q)||s.code.toLowerCase().includes(q)) &&
-    (currentView==="all"||(currentView==="high"&&s.group==="stop_high")||(currentView==="low"&&s.group==="stop_low")||(currentView==="new"&&s.is_new))
+    ((currentView==="high"&&s.group==="stop_high")||(currentView==="low"&&s.group==="stop_low")||(currentView==="new"&&s.is_new))
   );
 }
 function render(){
