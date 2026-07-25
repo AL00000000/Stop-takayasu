@@ -240,11 +240,23 @@ def main() -> int:
             deduped.append(row)
     all_rows = deduped
 
+    as_of = max(as_of_values) if as_of_values else None
+
+    # 休場日に走ると前営業日の内容がそのまま返るため、実行日ではなく
+    # ページが示すデータ日付で保存する。既に持っていれば何も書かない。
+    data_date = as_of[:10] if as_of else today
+    if data_date != today:
+        if (DOCS_DATA / f"{data_date}.json").is_file():
+            print(f"skip: {data_date} は取得済み(実行日 {today} は休場日などの空振り)")
+            return 0
+        print(f"注意: 実行日 {today} に対しデータは {data_date} 付。"
+              f"未取得の日なので {data_date} として保存する", file=sys.stderr)
+    today = data_date
+
     prev_date, prev_data = load_previous(today)
     add_rank_and_moves(all_rows, prev_data)
     all_rows.sort(key=lambda s: (s["group"], s["rank"]))
 
-    as_of = max(as_of_values) if as_of_values else None
     payload = {
         "date": today,
         "as_of": as_of,
