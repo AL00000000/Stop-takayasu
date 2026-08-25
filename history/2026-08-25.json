@@ -1,0 +1,79 @@
+{
+  "date": "2026-08-25",
+  "as_of": "2026-08-25 15:34",
+  "prev_date": "2026-08-24",
+  "count": 3,
+  "source_counts": {
+    "stop_high": 3,
+    "stop_low": 0
+  },
+  "expected_counts": {
+    "stop_high": 3,
+    "stop_low": 0
+  },
+  "stocks": [
+    {
+      "code": "4170",
+      "name": "カイゼン",
+      "market": "東Ｇ",
+      "price": "222",
+      "status": "S",
+      "change": "+50",
+      "change_pct": "+29.07%",
+      "per": "189",
+      "pbr": "1.31",
+      "yld": "－",
+      "group": "stop_high",
+      "group_label": "本日のストップ高銘柄",
+      "key": "stop_high:4170",
+      "change_pct_num": 29.07,
+      "rank": 1,
+      "prev_rank": 1,
+      "move_num": 0,
+      "move": "→",
+      "is_new": false
+    },
+    {
+      "code": "462A",
+      "name": "ファンディノ",
+      "market": "東Ｇ",
+      "price": "339",
+      "status": "",
+      "change": "+58",
+      "change_pct": "+20.64%",
+      "per": "－",
+      "pbr": "1.72",
+      "yld": "－",
+      "group": "stop_high",
+      "group_label": "本日のストップ高銘柄",
+      "key": "stop_high:462A",
+      "change_pct_num": 20.64,
+      "rank": 2,
+      "prev_rank": 2,
+      "move_num": 0,
+      "move": "→",
+      "is_new": false
+    },
+    {
+      "code": "475A",
+      "name": "ギミック",
+      "market": "東Ｓ",
+      "price": "697",
+      "status": "S",
+      "change": "+100",
+      "change_pct": "+16.75%",
+      "per": "15.7",
+      "pbr": "1.45",
+      "yld": "－",
+      "group": "stop_high",
+      "group_label": "本日のストップ高銘柄",
+      "key": "stop_high:475A",
+      "change_pct_num": 16.75,
+      "rank": 3,
+      "prev_rank": "",
+      "move_num": null,
+      "move": "NEW",
+      "is_new": true
+    }
+  ]
+}
