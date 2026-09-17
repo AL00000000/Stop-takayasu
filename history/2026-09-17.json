@@ -1,6 +1,6 @@
 {
   "date": "2026-09-17",
-  "as_of": "2026-09-17 15:34",
+  "as_of": "2026-09-17 16:00",
   "prev_date": "2026-09-16",
   "count": 10,
   "source_counts": {
@@ -41,7 +41,7 @@
       "status": "S",
       "change": "+80",
       "change_pct": "+19.05%",
-      "per": "15.4",
+      "per": "2.6",
       "pbr": "5.61",
       "yld": "－",
       "group": "stop_high",
